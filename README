@@ -1,0 +1,99 @@
+1: Modify the source code
+
+There are some constant varaibles that are heavily bound to the specific platform, such IDT
+In the kern_idt.h, we should modify the following variables
+
+Note that, if your Linux image chooses the version of **3.2.0-29-generic-pae**, you do not need to do anything.
+Do double check, the version is **PAE** enabled
+
+sudo apt-get install linux-headers-3.2.0-29-generic-pae linux-source-3.2.0 linux-image-3.2.0-29-generic-pae
+
+// the following three are heavily dependent on the system,
+// we should modify them according to the infor in /proc/kallsyms
+const static ulong orig_idt_table = (0xc1804000);			// the address of the IDT  
+const static ulong orig_system_call = (0xc15a5748);		// the entry address of the int80 
+const static ulong orig_sys_call_table = (0xc15b0000);		// the system call table
+const static ulong orig_do_page_fault = 0xc15a8a80;		// the original page fault handler address
+const static ulong orig_ret_from_exception = 0xc15a5710;// the original ret_from_exception address
+
+in the /proc/kallsyms, you search:
+	1: idt_table
+	2: system_call
+	3: sys_call_table
+	4: do_page_fault
+	5: ret_from_exception
+replace the corresponding variable using the result
+
+2: compile and install
+
+Go to the source directory (containing the Makefile)
+
+1: make
+2: sudo insmod ropguard.ko
+3: sudo rmmod ropguard
+4: dmesg |less
+
+3: Execute the HT editer
+
+go the ROPProject/code/ROP_example/hteditor/DB$ directory
+./ht <filename> 
+
+Then you can see the log messages through the dmesg
+
+dmesg | less
+
+Shutdown the HT editer through CTRL + C
+
+======================================================
+Useful Information:
+1: execution sequence of applications
+vdso -> LD -> App -> ...
+
+2: OVC files
+
+All tables are now under directory: ROPProject/code/ndss_DB_gen/db_gen/OVC
+update the directory variable in branchdb.c file
+
+const static char *directory = "~/program/module/ROPProject/code/ndss_DB_gen/db_gen/";
+
+3: intercepted application list
+
+update the function init_monitor_app_list in data_struct.c file
+
+Make sure the index is **continous**
+
+/**
+ * currently, the monitor list is fixed
+ **/
+void init_monitor_app_list(void){
+	monitor_app_list[0] = "ht";
+	monitor_app_list[1] = "a.out";
+	monitor_app_list[2] = "vuln";
+
+	monitor_app_list[3] = "astar_base.ia64-gcc42";
+	monitor_app_list[4] = "bzip2_base.ia64-gcc42";
+	monitor_app_list[5] = "gcc_base.ia64-gcc42";
+	monitor_app_list[6] = "gobmk_base.ia64-gcc42";
+	monitor_app_list[7] = "h264ref_base.ia64-gcc42";
+	monitor_app_list[8] = "hmmer_base.ia64-gcc42";
+	monitor_app_list[9] = "libquantum_base.ia64-gcc42";
+	monitor_app_list[10] = "mcf_base.ia64-gcc42";
+	monitor_app_list[11] = "omnetpp_base.ia64-gcc42";
+	monitor_app_list[12] = "perlbench_base.ia64-gcc42";
+	monitor_app_list[13] = "sjeng_base.ia64-gcc42";
+	monitor_app_list[14] = "specrand_base.ia64-gcc42";
+	monitor_app_list[15] = "Xalan_base.ia64-gcc42";
+	monitor_app_list[16] = "httpd";
+	
+	monitor_app_list[17] = "bonnie++";
+	monitor_app_list[18] = "netperf";
+}
+
+4: window size
+
+in monwin.h, we can change the macro WINDOW_NUM to update the window size
+
+#define WINDOW_NUM			(2)
+
+======================================================
+
